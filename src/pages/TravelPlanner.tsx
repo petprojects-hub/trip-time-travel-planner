@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useTravelData } from '@/hooks/useTravelData';
 import { VacationType } from '@/types/travel';
@@ -17,7 +16,7 @@ const TravelPlanner = () => {
   const vacationTypes: VacationType[] = ['Annual Break', 'Summer Vacation', 'Puja', 'Christmas'];
 
   const addMoreYears = () => {
-    setEndYear(prev => prev + 5);
+    setEndYear(prev => prev + 1);
   };
 
   return (
@@ -76,4 +75,3 @@ const TravelPlanner = () => {
 };
 
 export default TravelPlanner;
-

@@ -27,9 +27,27 @@ const PlannerTable = ({
     return plannerData.find(cell => cell.year === year && cell.vacationType === vacationType);
   };
 
+  const getVacationTypeMonth = (vacationType: string): string => {
+    switch (vacationType) {
+      case 'Annual Break': return 'March';
+      case 'Summer Vacation': return 'May';
+      case 'Puja': return 'October';
+      case 'Christmas': return 'December';
+      default: return '';
+    }
+  };
+
+  const isPlaceCompatible = (placeId: string, vacationType: string): boolean => {
+    const place = places.find(p => p.id === placeId);
+    if (!place) return false;
+    
+    const requiredMonth = getVacationTypeMonth(vacationType);
+    return place.months.includes(requiredMonth);
+  };
+
   const handleDrop = (e: React.DragEvent, year: number, vacationType: string) => {
     e.preventDefault();
-    if (draggedPlace) {
+    if (draggedPlace && isPlaceCompatible(draggedPlace, vacationType)) {
       const place = places.find(p => p.id === draggedPlace);
       if (place) {
         onAssignPlace(year, vacationType, place);
@@ -37,8 +55,12 @@ const PlannerTable = ({
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent, vacationType: string) => {
     e.preventDefault();
+    // Only allow drop if place is compatible
+    if (draggedPlace && !isPlaceCompatible(draggedPlace, vacationType)) {
+      e.dataTransfer.dropEffect = 'none';
+    }
   };
 
   const getVacationTypeColor = (vacationType: string) => {
@@ -76,16 +98,20 @@ const PlannerTable = ({
               </td>
               {years.map(year => {
                 const cellData = getCellData(year, vacationType);
+                const isCompatibleDrop = draggedPlace ? isPlaceCompatible(draggedPlace, vacationType) : true;
+                
                 return (
                   <td
                     key={`${year}-${vacationType}`}
                     className="p-2"
                     onDrop={(e) => handleDrop(e, year, vacationType)}
-                    onDragOver={handleDragOver}
+                    onDragOver={(e) => handleDragOver(e, vacationType)}
                   >
                     <Card className={`min-h-[80px] border-2 border-dashed transition-all duration-200 ${
                       cellData?.place 
                         ? 'border-green-300 bg-green-50' 
+                        : draggedPlace && !isCompatibleDrop
+                        ? 'border-red-300 bg-red-50 cursor-not-allowed'
                         : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
                     }`}>
                       {cellData?.place ? (
@@ -111,8 +137,15 @@ const PlannerTable = ({
                           </div>
                         </div>
                       ) : (
-                        <div className="p-3 text-center text-gray-400 text-sm">
-                          Drop destination here
+                        <div className={`p-3 text-center text-sm ${
+                          draggedPlace && !isCompatibleDrop 
+                            ? 'text-red-400' 
+                            : 'text-gray-400'
+                        }`}>
+                          {draggedPlace && !isCompatibleDrop 
+                            ? `Not valid for ${getVacationTypeMonth(vacationType)}`
+                            : 'Drop destination here'
+                          }
                         </div>
                       )}
                     </Card>

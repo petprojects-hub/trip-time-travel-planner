@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { TravelPlace } from '@/types/travel';
 import { Button } from '@/components/ui/button';
@@ -13,10 +12,7 @@ interface PlaceFormProps {
   onCancel: () => void;
 }
 
-const months = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
-];
+const months = ['March', 'May', 'October', 'December'];
 
 const PlaceForm = ({ initialData, onSubmit, onCancel }: PlaceFormProps) => {
   const [name, setName] = useState('');
