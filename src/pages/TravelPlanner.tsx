@@ -5,19 +5,26 @@ import { VacationType } from '@/types/travel';
 import PlannerTable from '@/components/PlannerTable';
 import PlacesList from '@/components/PlacesList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 
 const TravelPlanner = () => {
   const { places, plannerData, assignPlaceToCell, removePlaceFromCell } = useTravelData();
   const [draggedPlace, setDraggedPlace] = useState<string | null>(null);
+  const [endYear, setEndYear] = useState(2033);
   
-  const years = Array.from({ length: 8 }, (_, i) => 2026 + i);
+  const years = Array.from({ length: endYear - 2026 + 1 }, (_, i) => 2026 + i);
   const vacationTypes: VacationType[] = ['Annual Break', 'Summer Vacation', 'Puja', 'Christmas'];
+
+  const addMoreYears = () => {
+    setEndYear(prev => prev + 5);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-800 mb-2">Travel Planner</h1>
-        <p className="text-gray-600">Plan your adventures from 2026 to 2033</p>
+        <p className="text-gray-600">Plan your adventures from 2026 to {endYear}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -38,8 +45,17 @@ const TravelPlanner = () => {
 
         <div className="lg:col-span-3">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-xl font-semibold text-gray-800">Vacation Planning Table</CardTitle>
+              <Button 
+                onClick={addMoreYears}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add More Years
+              </Button>
             </CardHeader>
             <CardContent>
               <PlannerTable
@@ -60,3 +76,4 @@ const TravelPlanner = () => {
 };
 
 export default TravelPlanner;
+
