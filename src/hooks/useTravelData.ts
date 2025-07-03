@@ -1,91 +1,222 @@
 
 import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { TravelPlace, PlannerCell } from '@/types/travel';
-
-const initialPlaces: TravelPlace[] = [
-  { id: '1', name: 'Kazakhstan + Uzbekistan', days: 14, months: ['May'] },
-  { id: '2', name: 'Egypt', days: 9, months: ['March', 'October'] },
-  { id: '3', name: 'Varanasi', days: 4, months: ['March', 'December'] },
-  { id: '4', name: 'Singapore + Malaysia', days: 9, months: ['March', 'May', 'October'] },
-  { id: '5', name: 'Maldives + Sri Lanka', days: 14, months: ['March'] },
-  { id: '6', name: 'Hyderabad', days: 4, months: ['March', 'December'] },
-  { id: '7', name: 'Georgia + Azerbaijan', days: 14, months: ['March', 'May'] },
-  { id: '8', name: 'Dubai', days: 5, months: ['March'] },
-  { id: '9', name: 'Iceland', days: 9, months: ['September', 'October'] },
-  { id: '10', name: 'Kedarnath', days: 9, months: ['May'] },
-  { id: '11', name: 'Nepal', days: 6, months: ['October'] },
-  { id: '12', name: 'Vietnam', days: 9, months: ['December', 'March'] },
-  { id: '13', name: 'China', days: 9, months: ['March', 'October'] },
-  { id: '14', name: 'Bhutan', days: 9, months: ['March', 'October'] },
-];
+import { useToast } from '@/hooks/use-toast';
 
 export const useTravelData = () => {
-  const [places, setPlaces] = useState<TravelPlace[]>(() => {
-    const saved = localStorage.getItem('travelPlaces');
-    return saved ? JSON.parse(saved) : initialPlaces;
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch travel places from Supabase
+  const { data: places = [], isLoading } = useQuery({
+    queryKey: ['travel-places'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('travel_places')
+        .select('*')
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
   });
 
-  const [plannerData, setPlannerData] = useState<PlannerCell[]>(() => {
-    const saved = localStorage.getItem('plannerData');
-    return saved ? JSON.parse(saved) : [];
+  // Fetch planner assignments from Supabase
+  const { data: plannerData = [] } = useQuery({
+    queryKey: ['planner-assignments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('planner_assignments')
+        .select(`
+          *,
+          travel_places (*)
+        `)
+        .order('year', { ascending: true });
+      
+      if (error) throw error;
+      
+      return (data || []).map(assignment => ({
+        year: assignment.year,
+        vacationType: assignment.vacation_type,
+        place: assignment.travel_places
+      })) as PlannerCell[];
+    },
   });
 
-  useEffect(() => {
-    localStorage.setItem('travelPlaces', JSON.stringify(places));
-  }, [places]);
+  // Add place mutation
+  const addPlaceMutation = useMutation({
+    mutationFn: async (place: Omit<TravelPlace, 'id' | 'created_at' | 'updated_at'>) => {
+      const { data, error } = await supabase
+        .from('travel_places')
+        .insert([place])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['travel-places'] });
+      toast({
+        title: "Success",
+        description: "Destination added successfully!",
+      });
+    },
+    onError: (error) => {
+      console.error('Error adding place:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add destination. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
-  useEffect(() => {
-    localStorage.setItem('plannerData', JSON.stringify(plannerData));
-  }, [plannerData]);
+  // Update place mutation
+  const updatePlaceMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<TravelPlace> }) => {
+      const { data, error } = await supabase
+        .from('travel_places')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['travel-places'] });
+      queryClient.invalidateQueries({ queryKey: ['planner-assignments'] });
+      toast({
+        title: "Success",
+        description: "Destination updated successfully!",
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating place:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update destination. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
-  const addPlace = (place: Omit<TravelPlace, 'id'>) => {
-    const newPlace: TravelPlace = {
-      ...place,
-      id: Date.now().toString(),
-    };
-    setPlaces(prev => [...prev, newPlace]);
+  // Delete place mutation
+  const deletePlaceMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('travel_places')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['travel-places'] });
+      queryClient.invalidateQueries({ queryKey: ['planner-assignments'] });
+      toast({
+        title: "Success",
+        description: "Destination deleted successfully!",
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting place:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete destination. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Assign place to cell mutation
+  const assignPlaceMutation = useMutation({
+    mutationFn: async ({ year, vacationType, place }: { year: number; vacationType: string; place: TravelPlace }) => {
+      const { data, error } = await supabase
+        .from('planner_assignments')
+        .upsert({
+          year,
+          vacation_type: vacationType,
+          place_id: place.id
+        })
+        .select();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['planner-assignments'] });
+      toast({
+        title: "Success",
+        description: "Destination assigned successfully!",
+      });
+    },
+    onError: (error) => {
+      console.error('Error assigning place:', error);
+      toast({
+        title: "Error",
+        description: "Failed to assign destination. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Remove place from cell mutation
+  const removePlaceMutation = useMutation({
+    mutationFn: async ({ year, vacationType }: { year: number; vacationType: string }) => {
+      const { error } = await supabase
+        .from('planner_assignments')
+        .delete()
+        .eq('year', year)
+        .eq('vacation_type', vacationType);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['planner-assignments'] });
+      toast({
+        title: "Success",
+        description: "Destination removed successfully!",
+      });
+    },
+    onError: (error) => {
+      console.error('Error removing place:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove destination. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addPlace = (place: Omit<TravelPlace, 'id' | 'created_at' | 'updated_at'>) => {
+    addPlaceMutation.mutate(place);
   };
 
   const updatePlace = (id: string, updates: Partial<TravelPlace>) => {
-    setPlaces(prev => prev.map(place => 
-      place.id === id ? { ...place, ...updates } : place
-    ));
+    updatePlaceMutation.mutate({ id, updates });
   };
 
   const deletePlace = (id: string) => {
-    setPlaces(prev => prev.filter(place => place.id !== id));
-    // Remove from planner if assigned
-    setPlannerData(prev => prev.map(cell => 
-      cell.place?.id === id ? { ...cell, place: undefined } : cell
-    ));
+    deletePlaceMutation.mutate(id);
   };
 
   const assignPlaceToCell = (year: number, vacationType: string, place: TravelPlace) => {
-    setPlannerData(prev => {
-      const existing = prev.find(cell => cell.year === year && cell.vacationType === vacationType);
-      if (existing) {
-        return prev.map(cell => 
-          cell.year === year && cell.vacationType === vacationType 
-            ? { ...cell, place } 
-            : cell
-        );
-      } else {
-        return [...prev, { year, vacationType, place }];
-      }
-    });
+    assignPlaceMutation.mutate({ year, vacationType, place });
   };
 
   const removePlaceFromCell = (year: number, vacationType: string) => {
-    setPlannerData(prev => prev.map(cell => 
-      cell.year === year && cell.vacationType === vacationType 
-        ? { ...cell, place: undefined } 
-        : cell
-    ));
+    removePlaceMutation.mutate({ year, vacationType });
   };
 
   return {
     places,
     plannerData,
+    isLoading,
     addPlace,
     updatePlace,
     deletePlace,

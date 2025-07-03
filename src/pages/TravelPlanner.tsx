@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useTravelData } from '@/hooks/useTravelData';
 import { VacationType } from '@/types/travel';
@@ -6,9 +7,10 @@ import PlacesList from '@/components/PlacesList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const TravelPlanner = () => {
-  const { places, plannerData, assignPlaceToCell, removePlaceFromCell } = useTravelData();
+  const { places, plannerData, assignPlaceToCell, removePlaceFromCell, isLoading } = useTravelData();
   const [draggedPlace, setDraggedPlace] = useState<string | null>(null);
   const [endYear, setEndYear] = useState(2033);
   
@@ -18,6 +20,43 @@ const TravelPlanner = () => {
   const addMoreYears = () => {
     setEndYear(prev => prev + 1);
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <Skeleton className="h-10 w-64 mb-2" />
+          <Skeleton className="h-6 w-48" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-48" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} className="h-24 w-full" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="lg:col-span-3">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-64" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-96 w-full" />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

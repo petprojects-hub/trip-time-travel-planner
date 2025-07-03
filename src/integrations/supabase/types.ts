@@ -9,7 +9,65 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      planner_assignments: {
+        Row: {
+          created_at: string
+          id: string
+          place_id: string | null
+          vacation_type: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          place_id?: string | null
+          vacation_type: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          place_id?: string | null
+          vacation_type?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planner_assignments_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "travel_places"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      travel_places: {
+        Row: {
+          created_at: string
+          days: number
+          id: string
+          months: string[]
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          days: number
+          id?: string
+          months: string[]
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          days?: number
+          id?: string
+          months?: string[]
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

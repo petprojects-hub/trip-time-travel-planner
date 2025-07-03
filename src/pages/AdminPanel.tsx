@@ -7,9 +7,10 @@ import PlacesTable from '@/components/PlacesTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const AdminPanel = () => {
-  const { places, addPlace, updatePlace, deletePlace } = useTravelData();
+  const { places, addPlace, updatePlace, deletePlace, isLoading } = useTravelData();
   const [editingPlace, setEditingPlace] = useState<TravelPlace | null>(null);
   const [showForm, setShowForm] = useState(false);
 
@@ -18,7 +19,7 @@ const AdminPanel = () => {
     setShowForm(true);
   };
 
-  const handleSubmit = (placeData: Omit<TravelPlace, 'id'>) => {
+  const handleSubmit = (placeData: Omit<TravelPlace, 'id' | 'created_at' | 'updated_at'>) => {
     if (editingPlace) {
       updatePlace(editingPlace.id, placeData);
     } else {
@@ -32,6 +33,32 @@ const AdminPanel = () => {
     setEditingPlace(null);
     setShowForm(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <Skeleton className="h-10 w-48 mb-2" />
+            <Skeleton className="h-6 w-64" />
+          </div>
+          <Skeleton className="h-10 w-48" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-3">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-64" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-96 w-full" />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
