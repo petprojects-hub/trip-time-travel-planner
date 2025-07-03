@@ -128,13 +128,6 @@ const PlannerTable = ({
                           <div className="text-xs text-gray-600">
                             {cellData.place.days} days
                           </div>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {cellData.place.months.map(month => (
-                              <Badge key={month} variant="outline" className="text-xs">
-                                {month}
-                              </Badge>
-                            ))}
-                          </div>
                         </div>
                       ) : (
                         <div className={`p-3 text-center text-sm ${
