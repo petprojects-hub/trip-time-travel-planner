@@ -19,11 +19,13 @@ const App = () => (
       <BrowserRouter>
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
           <Navbar />
-          <Routes>
-            <Route path="/" element={<TravelPlanner />} />
-            <Route path="/admin" element={<AdminPanel />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <main className="pb-4">
+            <Routes>
+              <Route path="/" element={<TravelPlanner />} />
+              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
         </div>
       </BrowserRouter>
     </TooltipProvider>
