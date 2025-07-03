@@ -19,6 +19,12 @@ const TravelPlanner = () => {
   const years = Array.from({ length: endYear - 2026 + 1 }, (_, i) => 2026 + i);
   const vacationTypes: VacationType[] = ['Annual Break', 'Summer Vacation', 'Puja', 'Christmas'];
 
+  // Get assigned place IDs from planner data
+  const assignedPlaceIds = plannerData.map(cell => cell.place?.id).filter(Boolean) as string[];
+  
+  // Filter out assigned places from available destinations
+  const availablePlaces = places.filter(place => !assignedPlaceIds.includes(place.id));
+
   const addMoreYears = () => {
     setEndYear(prev => prev + 1);
   };
@@ -70,14 +76,23 @@ const TravelPlanner = () => {
           <div className={isMobile ? 'order-2' : 'lg:col-span-1'}>
             <Card className={isMobile ? '' : 'sticky top-4'}>
               <CardHeader>
-                <CardTitle className="text-base sm:text-lg font-semibold text-gray-800">Available Destinations</CardTitle>
+                <CardTitle className="text-base sm:text-lg font-semibold text-gray-800">
+                  Available Destinations ({availablePlaces.length})
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <PlacesList 
-                  places={places} 
-                  onDragStart={setDraggedPlace}
-                  onDragEnd={() => setDraggedPlace(null)}
-                />
+                {availablePlaces.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>All destinations have been assigned!</p>
+                    <p className="text-sm mt-2">Remove destinations from the planning table to make them available again.</p>
+                  </div>
+                ) : (
+                  <PlacesList 
+                    places={availablePlaces} 
+                    onDragStart={setDraggedPlace}
+                    onDragEnd={() => setDraggedPlace(null)}
+                  />
+                )}
               </CardContent>
             </Card>
           </div>
